@@ -1,5 +1,5 @@
 import 'dart:convert';
-import 'dart:ffi';
+// import 'dart:ffi';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
@@ -7,7 +7,7 @@ import 'package:nft_mobile_project/intro.dart';
 import 'package:web3dart/web3dart.dart';
 import 'package:walletconnect_dart/walletconnect_dart.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:web3_connect/web3_connect.dart';
+// import 'package:web3_connect/web3_connect.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:mime/mime.dart';
 import 'package:http_parser/http_parser.dart';
@@ -21,7 +21,7 @@ List<String> myAddress = [];
 int chainID = 0;
 String privateKey ='';
 const String rpcUrl = 'http://10.0.2.2:7545';
-const String contractAddress = "0xDD855AC31d295F6C96C20eF85a09ef507BEbff69";
+const String contractAddress = "0x4DA1b68bE01FFd2396BE67009CF17667B1f285E3";
 const String testURI = "https://ipfs.io/ipfs/Qmd9MCGtdVz2miNumBHDbvj8bigSgTwnr4SbyH6DNnpWdt?filename=0-PUG.json";
 String currentURI = "https://ipfs.io/ipfs/Qmd9MCGtdVz2miNumBHDbvj8bigSgTwnr4SbyH6DNnpWdt?filename=0-PUG.json";
 const String web3storageAPIToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJkaWQ6ZXRocjoweGFhRWNBRjUyQzhCNmMxOTM1QTdmMzFBOWY3RDJiMGFjYjRkNzVDNjEiLCJpc3MiOiJ3ZWIzLXN0b3JhZ2UiLCJpYXQiOjE2NjY4MzQxNzExMzQsIm5hbWUiOiJORlQgVG9rZW4ifQ.7SguefHFnmh4qQXtt2GsnkYjYRuOtW_vzUbbkoyCx38";
@@ -402,51 +402,51 @@ class _MyHomePageState extends State<MyHomePage> {
   Future<void> connectWallet() async {
     
     // Create a connector
-    final connector = WalletConnect(
-        bridge: 'https://bridge.walletconnect.org',
-        clientMeta: const PeerMeta(
-          name: 'WalletConnect',
-          description: 'WalletConnect Developer App',
-          url: 'https://walletconnect.org',
-          icons: [
-            'https://gblobscdn.gitbook.com/spaces%2F-LJJeCjcLrr53DcT1Ml7%2Favatar.png?alt=media'
-          ],
-        ),
-    );
-    // way 2: getting address (public key) through wallet connecter by entering the password
-    // Subscribe to events
+    // final connector = WalletConnect(
+    //     bridge: 'https://bridge.walletconnect.org',
+    //     clientMeta: const PeerMeta(
+    //       name: 'WalletConnect',
+    //       description: 'WalletConnect Developer App',
+    //       url: 'https://walletconnect.org',
+    //       icons: [
+    //         'https://gblobscdn.gitbook.com/spaces%2F-LJJeCjcLrr53DcT1Ml7%2Favatar.png?alt=media'
+    //       ],
+    //     ),
+    // );
+    // // way 2: getting address (public key) through wallet connecter by entering the password
+    // // Subscribe to events
     
-    connector.on('connect', (session) => {
-      // testSession
-      chainID = connector.session.chainId,
-      print(chainID),
-      print(myAddress[0]),
+    // connector.on('connect', (session) => {
+    //   // testSession
+    //   chainID = connector.session.chainId,
+    //   print(chainID),
+    //   print(myAddress[0]),
       
-    });
-    connector.on('session_update', (payload) => print(payload));
-    connector.on('disconnect', (session) => print(session));
+    // });
+    // connector.on('session_update', (payload) => print(payload));
+    // connector.on('disconnect', (session) => print(session));
 
-    if (!connector.connected) {
-    final session = await connector.createSession(
-        chainId: 5777,
-        onDisplayUri: (uri) async => //print(uri)
-        {
-          await launchUrl(Uri.parse(uri))
-        },
-      );
+    // if (!connector.connected) {
+    // final session = await connector.createSession(
+    //     chainId: 5777,
+    //     onDisplayUri: (uri) async => //print(uri)
+    //     {
+    //       await launchUrl(Uri.parse(uri))
+    //     },
+    //   );
       
-    }
-    setState(() {
-        myAddress = connector.session.accounts;
-    });
+    // }
+    // setState(() {
+    //     myAddress = connector.session.accounts;
+    // });
 
-    if (myAddress != null) {
-      // final client = Web3Client(rpcUrl, Client());
-      // final provider = EthereumWalletConnectProvider(connector);
-      // print(await signTransaction(SessionStatus(chainId: chainID, accounts: myAddress), connector));
-      // yourContract = YourContract(address: contractAddr, client: client);
-    }
-    print(connector.session.connected);
+    // if (myAddress != null) {
+    //   // final client = Web3Client(rpcUrl, Client());
+    //   // final provider = EthereumWalletConnectProvider(connector);
+    //   // print(await signTransaction(SessionStatus(chainId: chainID, accounts: myAddress), connector));
+    //   // yourContract = YourContract(address: contractAddr, client: client);
+    // }
+    // print(connector.session.connected);
   }
 
   static const TextStyle optionStyle =
