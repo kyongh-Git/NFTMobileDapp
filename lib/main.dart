@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
+import 'package:web_socket_channel/io.dart';
 import 'package:nft_mobile_project/intro.dart';
 import 'package:web3dart/web3dart.dart';
 import 'package:walletconnect_dart/walletconnect_dart.dart';
@@ -15,16 +16,21 @@ import 'dart:io';
 import 'dart:convert';
 import 'package:path_provider/path_provider.dart';
 import 'package:carousel_slider/carousel_slider.dart';
-
+import 'package:convert/convert.dart';
 
 List<String> myAddress = [];
-int chainID = 0;
-String privateKey ='';
+int chainID = 1337;
+String privateKey = '';
 const String rpcUrl = 'http://10.0.2.2:7545';
-const String contractAddress = "0x4DA1b68bE01FFd2396BE67009CF17667B1f285E3";
-const String testURI = "https://ipfs.io/ipfs/Qmd9MCGtdVz2miNumBHDbvj8bigSgTwnr4SbyH6DNnpWdt?filename=0-PUG.json";
-String currentURI = "https://ipfs.io/ipfs/Qmd9MCGtdVz2miNumBHDbvj8bigSgTwnr4SbyH6DNnpWdt?filename=0-PUG.json";
-const String web3storageAPIToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJkaWQ6ZXRocjoweGFhRWNBRjUyQzhCNmMxOTM1QTdmMzFBOWY3RDJiMGFjYjRkNzVDNjEiLCJpc3MiOiJ3ZWIzLXN0b3JhZ2UiLCJpYXQiOjE2NjY4MzQxNzExMzQsIm5hbWUiOiJORlQgVG9rZW4ifQ.7SguefHFnmh4qQXtt2GsnkYjYRuOtW_vzUbbkoyCx38";
+const String erc721_contractAddress =
+    ""; // Replace with actual deployed contract addres
+const String erc20_contractAddress =
+    ""; // Replace with actual deployed contract addres
+const String testURI =
+    "https://ipfs.io/ipfs/Qmd9MCGtdVz2miNumBHDbvj8bigSgTwnr4SbyH6DNnpWdt?filename=0-PUG.json";
+String currentURI =
+    "https://ipfs.io/ipfs/Qmd9MCGtdVz2miNumBHDbvj8bigSgTwnr4SbyH6DNnpWdt?filename=0-PUG.json";
+const String web3storageAPIToken = "";
 final ImagePicker _picker = ImagePicker();
 List<String> NFT_images = [];
 
@@ -39,14 +45,13 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'NFT Mobile Demo',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-      ),
-      // home: const MyHomePage(title: 'NFT Mobile App'),
-      home: const IntroScreen()
-    );
+        title: 'NFT Mobile Demo',
+        debugShowCheckedModeBanner: false,
+        theme: ThemeData(
+          primarySwatch: Colors.blue,
+        ),
+        // home: const MyHomePage(title: 'NFT Mobile App'),
+        home: const IntroScreen());
   }
 }
 
@@ -70,26 +75,27 @@ class MyApp extends StatelessWidget {
 //       ],
 //     );
 //   }
-Column _buildButtonColumnForWallet(Color color, IconData icon, String label, Function function) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        IconButton(icon: Icon(icon), color: color, onPressed: () => function()),
-        Container(
-          margin: const EdgeInsets.only(top: 8),
-          child: Text(
-            label,
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.w400,
-              color: color,
-            ),
+Column _buildButtonColumnForWallet(
+    Color color, IconData icon, String label, Function function) {
+  return Column(
+    mainAxisSize: MainAxisSize.min,
+    mainAxisAlignment: MainAxisAlignment.center,
+    children: [
+      IconButton(icon: Icon(icon), color: color, onPressed: () => function()),
+      Container(
+        margin: const EdgeInsets.only(top: 8),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.w400,
+            color: color,
           ),
         ),
-      ],
-    );
-  }
+      ),
+    ],
+  );
+}
 
 class MyHomePage extends StatefulWidget {
   const MyHomePage({Key? key, required this.title}) : super(key: key);
@@ -103,14 +109,10 @@ class MyHomePage extends StatefulWidget {
 class NFTCID {
   final String cid;
 
-  const NFTCID({
-    required this.cid
-  });
+  const NFTCID({required this.cid});
 
   factory NFTCID.fromJson(Map<String, dynamic> json) {
-    return NFTCID(
-      cid: json['cid']
-    );
+    return NFTCID(cid: json['cid']);
   }
 }
 
@@ -121,35 +123,34 @@ class NFTURI {
   final String creativeScore;
   final String price;
 
-  const NFTURI({
-    required this.name,
-    required this.description,
-    required this.image,
-    required this.creativeScore,
-    required this.price
-  });
+  const NFTURI(
+      {required this.name,
+      required this.description,
+      required this.image,
+      required this.creativeScore,
+      required this.price});
 
   factory NFTURI.fromJson(Map<String, dynamic> json) {
     return NFTURI(
-      name: json['name'],
-      description: json['description'],
-      image: json['image'],
-      creativeScore: json['creativeScore'],
-      price: json['price']
-    );
+        name: json['name'],
+        description: json['description'],
+        image: json['image'],
+        creativeScore: json['creativeScore'],
+        price: json['price']);
   }
 
   Map<String, dynamic> toJson() => {
-      'name': name,
-      'description': description,
-      'image': image,
-      'creativeScore': creativeScore,
-      'price': price
-  };
+        'name': name,
+        'description': description,
+        'image': image,
+        'creativeScore': creativeScore,
+        'price': price
+      };
 }
 
 class _MyHomePageState extends State<MyHomePage> {
   BigInt _myNFTCount = BigInt.from(0);
+  BigInt _myCoinAmount = BigInt.from(0);
   int _selectedIndex = 0;
   bool _login = false;
   //String imageURL = "https://img.phonandroid.com/2021/12/marche-nft.jpg"; //
@@ -158,7 +159,7 @@ class _MyHomePageState extends State<MyHomePage> {
   // late Directory dir;
   // String fileName = "temp.json";
   // bool fileExists = false;
-  // late Map<String, String> fileContent; 
+  // late Map<String, String> fileContent;
 
   final nameController = TextEditingController();
   final descriptionController = TextEditingController();
@@ -176,7 +177,7 @@ class _MyHomePageState extends State<MyHomePage> {
     creativenessController.clear();
     priceController.clear();
     privatekeyController.clear();
-    
+
     // nameController.dispose();
     // descriptionController.dispose();
     // creativenessController.dispose();
@@ -190,15 +191,20 @@ class _MyHomePageState extends State<MyHomePage> {
       // var response = await post(Uri.parse("https://ptsv2.com/t/hgr3l-1666835374/post"),
       var image = await _picker.pickImage(source: ImageSource.gallery);
       // final mimeTypeData = lookupMimeType(image.path, headerBytes: );
-      if (image != null)
-      {
+      if (image != null) {
         var imageUploadRequest = http.MultipartRequest('POST', web3storageURI);
         // imageUploadRequest.headers["authorization"] = web3storageAPIToken;
-        imageUploadRequest.headers.addAll({"Authorization": "Bearer $web3storageAPIToken", "X-NAME": image.name.replaceAll(RegExp(r'^a-zA-Z0-9'), '')});
-        imageUploadRequest.files.add(await http.MultipartFile.fromPath('file', image.path));
+        imageUploadRequest.headers.addAll({
+          "Authorization": "Bearer $web3storageAPIToken",
+          "X-NAME": image.name.replaceAll(RegExp(r'^a-zA-Z0-9'), '')
+        });
+        imageUploadRequest.files
+            .add(await http.MultipartFile.fromPath('file', image.path));
         var response = await imageUploadRequest.send();
-        if (response.statusCode == 200) print('Uploaded!');
-        else print(response.statusCode);
+        if (response.statusCode == 200)
+          print('Uploaded!');
+        else
+          print(response.statusCode);
         var responsed = await http.Response.fromStream(response);
         // final responseData = json.decode(responsed.body);
         final responseData = jsonDecode(responsed.body);
@@ -207,14 +213,14 @@ class _MyHomePageState extends State<MyHomePage> {
         print(NFTCID.fromJson(responseData).cid);
 
         var uriUploadRequest = http.MultipartRequest('POST', web3storageURI);
-        uriUploadRequest.headers.addAll({"Authorization": "Bearer $web3storageAPIToken"});
+        uriUploadRequest.headers
+            .addAll({"Authorization": "Bearer $web3storageAPIToken"});
         var creatURI = NFTURI(
-          name: nameController.text,
-          description: descriptionController.text,
-          image: "https://ipfs.io/ipfs/" + NFTCID.fromJson(responseData).cid,
-          creativeScore: creativenessController.text,
-          price: priceController.text
-        );
+            name: nameController.text,
+            description: descriptionController.text,
+            image: "https://ipfs.io/ipfs/" + NFTCID.fromJson(responseData).cid,
+            creativeScore: creativenessController.text,
+            price: priceController.text);
         String json = jsonEncode(creatURI);
         print(json);
         print("Creating file!");
@@ -232,20 +238,24 @@ class _MyHomePageState extends State<MyHomePage> {
         // var user = NFTURI.fromJson(userMap);
         // print(user);
 
-        uriUploadRequest.files.add(await http.MultipartFile.fromPath('file', file.path));
+        uriUploadRequest.files
+            .add(await http.MultipartFile.fromPath('file', file.path));
         var jsonUploadResponse = await uriUploadRequest.send();
-        if (jsonUploadResponse.statusCode == 200) print('URI Uploaded!');
-        else print(jsonUploadResponse.statusCode);
+        if (jsonUploadResponse.statusCode == 200)
+          print('URI Uploaded!');
+        else
+          print(jsonUploadResponse.statusCode);
         var uriResponsed = await http.Response.fromStream(jsonUploadResponse);
         final uriResponsedData = jsonDecode(uriResponsed.body);
         print(NFTCID.fromJson(uriResponsedData).cid);
 
-        // generate uri and update the current uri variable 
-        currentURI = "https://ipfs.io/ipfs/" + NFTCID.fromJson(uriResponsedData).cid;
+        // generate uri and update the current uri variable
+        currentURI =
+            "https://ipfs.io/ipfs/" + NFTCID.fromJson(uriResponsedData).cid;
+        print(currentURI);
         await createNFT();
       }
-    }
-    catch(e) {
+    } catch (e) {
       print(e);
     }
 
@@ -255,121 +265,148 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   void initState() {
     super.initState();
-    ethClient = Web3Client(rpcUrl, http.Client());
+    ethClient = Web3Client(rpcUrl, http.Client(), socketConnector: () {
+      return IOWebSocketChannel.connect(rpcUrl).cast<String>();
+    });
   }
 
-  Future<DeployedContract> loadContract() async{
-    String abi = await rootBundle.loadString("assets/abi.json");
-    final contract = DeployedContract(ContractAbi.fromJson(abi, "ArtNFT"), EthereumAddress.fromHex(contractAddress));
+  Future<DeployedContract> loadContract() async {
+    String abi = await rootBundle.loadString("assets/abi_erc721.json");
+    final contract = DeployedContract(ContractAbi.fromJson(abi, "ArtNFT"),
+        EthereumAddress.fromHex(erc721_contractAddress));
+
+    try {
+      final nameFunction = contract.function('name');
+      final symbolFunction = contract.function('symbol');
+
+      // Calling the view functions
+      String name = (await ethClient.call(
+          contract: contract, function: nameFunction, params: []))[0] as String;
+      String symbol = (await ethClient.call(
+          contract: contract,
+          function: symbolFunction,
+          params: []))[0] as String;
+
+      // Print the contract name and symbol to confirm the contract is loaded correctly
+      print('Contract Name: $name');
+      print('Contract Symbol: $symbol');
+    } catch (e) {
+      print('Error while loading contract: $e');
+    }
     return contract;
   }
 
-  Future<List<dynamic>> query(String functionName, List<dynamic> args) async{
+  Future<List<dynamic>> query(String functionName, List<dynamic> args) async {
     final contract = await loadContract();
     final ethFunction = contract.function(functionName);
-    final result = await ethClient.call(contract: contract, function: ethFunction, params: args);
-    print(await ethClient.call(contract: contract, function: ethFunction, params: args));
+    var listeningTest = await ethClient.isListeningForNetwork();
+    if (!listeningTest) {
+      ethClient = Web3Client(rpcUrl, http.Client());
+    }
+    final result = await ethClient.call(
+        contract: contract, function: ethFunction, params: args);
     return result;
   }
 
-  Future<void> balanceOf() async{
+  Future<void> balanceOf() async {
     EthPrivateKey credentials;
     if (_login == false) {
       credentials = EthPrivateKey.fromHex(privatekeyController.text);
-      var address = await credentials.extractAddress();
-      List<dynamic> result = await query("balanceOf", [EthereumAddress.fromHex(address.hex)]);
+      var address = credentials.address;
+      List<dynamic> result =
+          await query("balanceOf", [EthereumAddress.fromHex(address.hex)]);
       _myNFTCount = result[0];
-      setState(() {
-      
-      });
+      setState(() {});
       _login = true;
       privateKey = privatekeyController.text;
       getTokenURIofOwner();
-    }
-    else if(_login == true) {
+    } else if (_login == true) {
       credentials = EthPrivateKey.fromHex(privateKey);
-      var address = await credentials.extractAddress();
-      List<dynamic> result = await query("balanceOf", [EthereumAddress.fromHex(address.hex)]);
+      var address = credentials.address;
+      List<dynamic> result =
+          await query("balanceOf", [EthereumAddress.fromHex(address.hex)]);
       _myNFTCount = result[0];
       getTokenURIofOwner();
-      setState(() {
-        
-      });
+      setState(() {});
     }
   }
 
-  Future<void> getTokenURI(int tokenId) async{
+  Future<void> getTokenURI(int tokenId) async {
     // query "balance of" first to see how many token this user have
-    // ex) 12 then for loop to rotate to pull out all the URI using tokenURI function 
+    // ex) 12 then for loop to rotate to pull out all the URI using tokenURI function
     List<dynamic> result = await query("tokenURI", [BigInt.from(tokenId)]);
     http.Response response = await http.get(Uri.parse(result[0].toString()));
-    Map<String, dynamic> initialURItoJSON = await jsonDecode(response.body); 
+    Map<String, dynamic> initialURItoJSON = await jsonDecode(response.body);
     NFT_images.add(initialURItoJSON['image']);
     print(NFT_images);
-    setState(() {
-      
-    });
-  }
-  // for carousel
-  Future<void> getTokenURIofOwner() async{
-    EthPrivateKey credentials = EthPrivateKey.fromHex(privateKey);
-    var address = await credentials.extractAddress();
-    List<dynamic> result = await query("tokenURIofOwner", [EthereumAddress.fromHex(address.hex)]);
-    print(result[0]);
-    NFT_images.clear();
-    for(var i in result[0])
-    {
-      await getTokenURI(i.toInt());
-    }
-    setState(() {
-      
-    });
+    setState(() {});
   }
 
-  Future<String> submit(String functionName, List<dynamic> args) async{
+  // for carousel
+  Future<void> getTokenURIofOwner() async {
     EthPrivateKey credentials = EthPrivateKey.fromHex(privateKey);
-    DeployedContract contract = await loadContract();
-    final ethFunction = contract.function(functionName);
-    final result = await ethClient.sendTransaction(credentials, Transaction.callContract(
-      contract: contract, 
-      function: ethFunction, 
-      parameters: args
-      )
-    );
+    var address = credentials.address;
+    List<dynamic> result =
+        await query("tokenURIofOwner", [EthereumAddress.fromHex(address.hex)]);
+    NFT_images.clear();
+    for (var i in result[0]) {
+      await getTokenURI(i.toInt());
+    }
+    setState(() {});
+  }
+
+  Future<String> submit(String functionName, List<dynamic> args) async {
+    EthPrivateKey credentials = EthPrivateKey.fromHex(privateKey);
+    DeployedContract _contract = await loadContract();
+    final ethFunction = _contract.function(functionName);
+    var listeningTest = await ethClient.isListeningForNetwork();
+    if (!listeningTest) {
+      ethClient = Web3Client(rpcUrl, http.Client());
+    }
+    // print(ethFunction.name);
+    // print(_contract);
+    print(ethClient.getBalance(credentials.address));
+
+    // sendtransaction doesnt work
+    final result = await ethClient.sendTransaction(
+        credentials,
+        Transaction.callContract(
+            contract: _contract, function: ethFunction, parameters: args),
+        chainId: chainID);
+    // fetchChainIdFromNetworkId: true
     return result;
   }
-  // Way 1: getting address (public key) from private key 
-  Future<String> createNFT() async{
+
+  // Way 1: getting address (public key) from private key
+  Future<String> createNFT() async {
     // await postData();
     var response = await submit("createNFT", [currentURI]);
-    print("NFT created " + response);
     // EthPrivateKey credentials = EthPrivateKey.fromHex(privateKey);
     // var address = await credentials.extractAddress();
     // print(address.hex);
     await balanceOf();
-    
+
     return response;
   }
 
   Future<void> transferNFT() async {
     EthPrivateKey credentials = EthPrivateKey.fromHex(privateKey);
     var address = await credentials.extractAddress();
-    List<dynamic> result = await query("balanceOf", [EthereumAddress.fromHex(address.hex)]);
+    List<dynamic> result =
+        await query("balanceOf", [EthereumAddress.fromHex(address.hex)]);
     _myNFTCount = result[0];
     print(_myNFTCount);
-    if(_myNFTCount <= BigInt.zero){
+    if (_myNFTCount <= BigInt.zero) {
       print("Own nothing.");
       _dialogBuilder(context);
-    }
-    else {
+    } else {
       var response = await submit("transferFrom", [
         EthereumAddress.fromHex(address.hex),
         EthereumAddress.fromHex(receiverAddressController.text),
-        BigInt.tryParse(ndfIDController.text)]);
+        BigInt.tryParse(ndfIDController.text)
+      ]);
       print("NFT successfully transfered " + response);
-      setState(() {
-        
-      });
+      setState(() {});
       receiverAddressController.clear();
       ndfIDController.clear();
       await balanceOf();
@@ -382,7 +419,8 @@ class _MyHomePageState extends State<MyHomePage> {
       builder: (BuildContext context) {
         return AlertDialog(
           title: const Text('Your Wallet is empty'),
-          content: const Text('You can mint a new NFT before sending the NFTs to your friends!'),
+          content: const Text(
+              'You can mint a new NFT before sending the NFTs to your friends!'),
           actions: <Widget>[
             TextButton(
               style: TextButton.styleFrom(
@@ -399,8 +437,103 @@ class _MyHomePageState extends State<MyHomePage> {
     );
   }
 
+  Future<DeployedContract> loadContractCoin() async {
+    String abi = await rootBundle.loadString("assets/abi_erc20.json");
+    final contract = DeployedContract(ContractAbi.fromJson(abi, "ArtCoin"),
+        EthereumAddress.fromHex(erc20_contractAddress));
+
+    try {
+      final nameFunction = contract.function('name');
+      final symbolFunction = contract.function('symbol');
+
+      // Calling the view functions
+      String name = (await ethClient.call(
+          contract: contract, function: nameFunction, params: []))[0] as String;
+      String symbol = (await ethClient.call(
+          contract: contract,
+          function: symbolFunction,
+          params: []))[0] as String;
+
+      // Print the contract name and symbol to confirm the contract is loaded correctly
+      print('Contract Name: $name');
+      print('Contract Symbol: $symbol');
+    } catch (e) {
+      print('Error while loading contract: $e');
+    }
+    return contract;
+  }
+
+  Future<List<dynamic>> queryCoin(
+      String functionName, List<dynamic> args) async {
+    final contract = await loadContractCoin();
+    final ethFunction = contract.function(functionName);
+    var listeningTest = await ethClient.isListeningForNetwork();
+    if (!listeningTest) {
+      ethClient = Web3Client(rpcUrl, http.Client());
+    }
+    final result = await ethClient.call(
+        contract: contract, function: ethFunction, params: args);
+    return result;
+  }
+
+  Future<void> balanceOfCoin() async {
+    EthPrivateKey credentials;
+    if (_login == false) {
+      credentials = EthPrivateKey.fromHex(privatekeyController.text);
+      var address = credentials.address;
+      List<dynamic> result =
+          await queryCoin("balanceOf", [EthereumAddress.fromHex(address.hex)]);
+      _myCoinAmount = result[0];
+      setState(() {});
+      _login = true;
+      privateKey = privatekeyController.text;
+    } else if (_login == true) {
+      credentials = EthPrivateKey.fromHex(privateKey);
+      var address = credentials.address;
+      List<dynamic> result =
+          await queryCoin("balanceOf", [EthereumAddress.fromHex(address.hex)]);
+      _myCoinAmount = result[0];
+      setState(() {});
+    }
+  }
+
+  Future<String> submitCoinTrade(
+      String functionName, List<dynamic> args) async {
+    EthPrivateKey credentials = EthPrivateKey.fromHex(privateKey);
+    DeployedContract _contract = await loadContractCoin();
+    final ethFunction = _contract.function(functionName);
+    var listeningTest = await ethClient.isListeningForNetwork();
+    if (!listeningTest) {
+      ethClient = Web3Client(rpcUrl, http.Client());
+    }
+
+    // Send the transaction to the Ethereum network.
+    final result = await ethClient.sendTransaction(
+        credentials,
+        Transaction.callContract(
+            contract: _contract,
+            function: ethFunction,
+            parameters: args,
+            maxGas: 100000,
+            // maxFeePerGas: EtherAmount.inWei(BigInt.two),
+            gasPrice: EtherAmount.inWei(BigInt.from(1000000000)),
+            value: EtherAmount.fromUnitAndValue(EtherUnit.ether, 1)),
+        chainId: chainID);
+    // fetchChainIdFromNetworkId: true
+    print(result);
+
+    return result;
+  }
+
+  Future<String> buyArtCoin() async {
+    var response = await submitCoinTrade("buyArtCoin", []);
+    await balanceOfCoin();
+    print(_myCoinAmount);
+    print(response);
+    return response;
+  }
+
   Future<void> connectWallet() async {
-    
     // Create a connector
     // final connector = WalletConnect(
     //     bridge: 'https://bridge.walletconnect.org',
@@ -415,13 +548,13 @@ class _MyHomePageState extends State<MyHomePage> {
     // );
     // // way 2: getting address (public key) through wallet connecter by entering the password
     // // Subscribe to events
-    
+
     // connector.on('connect', (session) => {
     //   // testSession
     //   chainID = connector.session.chainId,
     //   print(chainID),
     //   print(myAddress[0]),
-      
+
     // });
     // connector.on('session_update', (payload) => print(payload));
     // connector.on('disconnect', (session) => print(session));
@@ -434,7 +567,7 @@ class _MyHomePageState extends State<MyHomePage> {
     //       await launchUrl(Uri.parse(uri))
     //     },
     //   );
-      
+
     // }
     // setState(() {
     //     myAddress = connector.session.accounts;
@@ -474,7 +607,7 @@ class _MyHomePageState extends State<MyHomePage> {
       _selectedIndex = index;
     });
   }
-  
+
   @override
   Widget build(BuildContext context) {
     Widget titleSection = Container(
@@ -518,15 +651,16 @@ class _MyHomePageState extends State<MyHomePage> {
     Widget buttonSection = Row(
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: [
-        _buildButtonColumnForWallet(Colors.blue, Icons.refresh, 'Reload Images', getTokenURIofOwner),
+        _buildButtonColumnForWallet(
+            Colors.blue, Icons.refresh, 'Reload Images', getTokenURIofOwner),
         // _buildButtonColumnForWallet(Colors.green, Icons.north, 'createCollectible', createCollectible),
-        _buildButtonColumnForWallet(Colors.red, Icons.south, 'Query balance', balanceOf),
+        _buildButtonColumnForWallet(
+            Colors.red, Icons.south, 'Query balance', balanceOf),
         // _buildButtonColumnForWallet(Colors.red, Icons.south, 'Withdraw', withdrawCoin),
       ],
     );
 
-    List<Widget> imageSliders = NFT_images
-    .map((item) => Container(
+    List<Widget> imageSliders = NFT_images.map((item) => Container(
           child: Container(
             margin: EdgeInsets.all(5.0),
             child: ClipRRect(
@@ -564,23 +698,22 @@ class _MyHomePageState extends State<MyHomePage> {
                   ],
                 )),
           ),
-        ))
-    .toList();
+        )).toList();
 
     Widget carouselSection = Container(
-        child: CarouselSlider(
-          options: CarouselOptions(
-            autoPlay: true,
-            aspectRatio: 2.0,
-            enlargeCenterPage: true,
-            // onPageChanged: changeActiveImage(),
-          ),
-          items: imageSliders,
+      child: CarouselSlider(
+        options: CarouselOptions(
+          autoPlay: true,
+          aspectRatio: 2.0,
+          enlargeCenterPage: true,
+          // onPageChanged: changeActiveImage(),
         ),
-      );
+        items: imageSliders,
+      ),
+    );
 
     // Widget imageSection = Container(
-      
+
     //   width: MediaQuery.of(context).size.width,
     //   height: 200,
     //   decoration: BoxDecoration(
@@ -593,108 +726,130 @@ class _MyHomePageState extends State<MyHomePage> {
     Widget mintButtonSection = Row(
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: [
-        _buildButtonColumnForWallet(Colors.green, Icons.image, 'Select Image', postData),
+        _buildButtonColumnForWallet(
+            Colors.green, Icons.image, 'Select Image', postData),
       ],
     );
 
     Widget transferButtonSection = Row(
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: [
-        _buildButtonColumnForWallet(Colors.orange, Icons.move_up, 'Transfer NFT', transferNFT),
+        _buildButtonColumnForWallet(
+            Colors.orange, Icons.move_up, 'Transfer NFT', transferNFT),
       ],
     );
 
     Widget loginButtonSection = Row(
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: [
-        _buildButtonColumnForWallet(Colors.red, Icons.login, 'Login', balanceOf),
+        _buildButtonColumnForWallet(
+            Colors.red, Icons.login, 'Login', balanceOf),
       ],
     );
 
     Widget transferSection = Center(
       child: ConstrainedBox(
         constraints: const BoxConstraints(
-        minWidth: 70,
-        minHeight: 70,
-        maxWidth: 300,
-        maxHeight: 350,
-      ),
-
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        children: [
-          TextField(
-            decoration: const InputDecoration(
+          minWidth: 70,
+          minHeight: 70,
+          maxWidth: 300,
+          maxHeight: 350,
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: [
+            TextField(
+              decoration: const InputDecoration(
                 border: OutlineInputBorder(),
                 hintText: 'Enter the address of the receiver',
               ),
-            controller: receiverAddressController,
-          ),
-          TextField(
-            decoration: const InputDecoration(
+              controller: receiverAddressController,
+            ),
+            TextField(
+              decoration: const InputDecoration(
                 border: OutlineInputBorder(),
                 hintText: 'Enter the id of the NFT',
               ),
-            controller: ndfIDController,
-          ),
-          transferButtonSection
-        ],
-      ),
+              controller: ndfIDController,
+            ),
+            transferButtonSection
+          ],
+        ),
       ),
     );
 
     Widget mintFormSection = Center(
       child: ConstrainedBox(
         constraints: const BoxConstraints(
-        minWidth: 70,
-        minHeight: 70,
-        maxWidth: 300,
-        maxHeight: 375,
-      ),
-
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        children: [
-          TextField(
-            decoration: const InputDecoration(
+          minWidth: 70,
+          minHeight: 70,
+          maxWidth: 300,
+          maxHeight: 375,
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: [
+            TextField(
+              decoration: const InputDecoration(
                 border: OutlineInputBorder(),
                 hintText: 'Enter the name of NFT',
               ),
-            controller: nameController,
-          ),
-          TextField(
-            decoration: const InputDecoration(
+              controller: nameController,
+            ),
+            TextField(
+              decoration: const InputDecoration(
                 border: OutlineInputBorder(),
                 hintText: 'Enter the description of NFT',
               ),
-            controller: descriptionController,
-          ),
-          TextField(
-            decoration: const InputDecoration(
+              controller: descriptionController,
+            ),
+            TextField(
+              decoration: const InputDecoration(
                 border: OutlineInputBorder(),
                 hintText: 'Enter the creativeness score of NFT',
               ),
-            controller: creativenessController,
-          ),
-          TextField(
-            decoration: const InputDecoration(
+              controller: creativenessController,
+            ),
+            TextField(
+              decoration: const InputDecoration(
                 border: OutlineInputBorder(),
                 hintText: 'Enter the price of NFT',
               ),
-            controller: priceController,
-          ),
-          mintButtonSection
-        ],
-      ),
+              controller: priceController,
+            ),
+            mintButtonSection
+          ],
+        ),
       ),
     );
 
-    Widget walletSection = Row(
-      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-      children: [
-        _buildButtonColumnForWallet(Colors.red, Icons.south, 'Connect Wallet', connectWallet),
-      ],
+    Widget walletSection = Container(
+      padding: EdgeInsets.all(10),
+      child: Column(
+        children: [
+          Text(
+            'Your ART Coin Balance:',
+            style: TextStyle(fontSize: 18),
+          ),
+          Text(
+            _myCoinAmount.toString(),
+            style: TextStyle(fontSize: 24),
+          ),
+          _buildButtonColumnForWallet(
+              Colors.red, Icons.login, 'Purchase More', buyArtCoin),
+          _buildButtonColumnForWallet(
+              Colors.red, Icons.south, 'Connect Wallet', connectWallet),
+        ],
+      ),
     );
+    // Row(
+    //   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+    //   children: [
+    //     networth(),
+    //     _buildButtonColumnForWallet(
+    //         Colors.red, Icons.south, 'Connect Wallet', connectWallet),
+    //   ],
+    // );
 
     Widget loginSection = Container(
       padding: const EdgeInsets.all(32),
@@ -725,44 +880,39 @@ class _MyHomePageState extends State<MyHomePage> {
     Widget pkSection = Center(
       child: ConstrainedBox(
         constraints: const BoxConstraints(
-        minWidth: 70,
-        minHeight: 70,
-        maxWidth: 300,
-        // maxHeight: 500,
-      ),
-
-      child: Column(
-        children: [
-          TextField(
-            decoration: const InputDecoration(
+          minWidth: 70,
+          minHeight: 70,
+          maxWidth: 300,
+          // maxHeight: 500,
+        ),
+        child: Column(
+          children: [
+            TextField(
+              decoration: const InputDecoration(
                 border: OutlineInputBorder(),
                 hintText: 'Enter your account private key',
-
               ),
-            controller: privatekeyController,
-          ),
-          loginButtonSection
-        ],
-      ),
+              controller: privatekeyController,
+            ),
+            loginButtonSection
+          ],
+        ),
       ),
     );
 
     List<Widget> _sectionSelect = <Widget>[
-      _login ?
-      Column(
-        children: [
-          titleSection,
-          carouselSection,
-          buttonSection,
-          // imageSection
-          // Expanded(child: imageSection,),
-        ]
-      ) : Column(
-        children: [
-          loginSection,
-          pkSection,
-        ]
-      ),
+      _login
+          ? Column(children: [
+              titleSection,
+              carouselSection,
+              buttonSection,
+              // imageSection
+              // Expanded(child: imageSection,),
+            ])
+          : Column(children: [
+              loginSection,
+              pkSection,
+            ]),
       mintFormSection,
       transferSection,
       walletSection
@@ -771,15 +921,13 @@ class _MyHomePageState extends State<MyHomePage> {
     Widget indexSection = Row(
       children: [
         Expanded(
-          child: 
-          Column(
-            // crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              _widgetOptions.elementAt(_selectedIndex),
-              _sectionSelect.elementAt(_selectedIndex)
-            ],
-          )
-        ),
+            child: Column(
+          // crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            _widgetOptions.elementAt(_selectedIndex),
+            _sectionSelect.elementAt(_selectedIndex)
+          ],
+        )),
       ],
     );
 
@@ -788,7 +936,7 @@ class _MyHomePageState extends State<MyHomePage> {
         title: Text(widget.title),
       ),
       // body: Center(
-      //   child: _widgetOptions.elementAt(_selectedIndex), 
+      //   child: _widgetOptions.elementAt(_selectedIndex),
       // ),
       body: Column(
         children: [
